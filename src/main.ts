@@ -1,50 +1,33 @@
-import Fastify from "fastify";
-import packageJson from "../package.json" with { type: "json" };
+import { config } from "./config/index.js";
+import { buildApp } from "./app.js";
 
-const app = Fastify({ logger: true });
+const app = await buildApp();
 
-const port = Number(process.env.PORT ?? 3001);
-const host = process.env.HOST ?? "0.0.0.0";
+const shutdown = async (signal: string) => {
+  app.log.info(`Received ${signal}, shutting down...`);
 
-app.get("/", async () => {
-  return {
-    service: "hayaxx-api",
-    version: packageJson.version,
-    status: "ok"
-  };
+  try {
+    await app.close();
+    process.exit(0);
+  } catch (error) {
+    app.log.error(error);
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
 });
 
-app.get("/health", async () => {
-  return {
-    status: "ok",
-    service: "hayaxx-api",
-    version: packageJson.version,
-  };
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
 });
-
-app.get("/ping", async () => {
-  return {
-    status: "ok",
-    message: "pong"
-  }
-})
-
-app.get("/info", async () => {
-  return {
-    service: "hayaxx-api",
-    version: packageJson.version,
-    environment: process.env.NODE_ENV ?? "development"
-  }
-})
-
-app.get("/uptime", async () => {
-  return {
-    "uptime": Math.floor(process.uptime())
-  }
-})
 
 try {
-  await app.listen({ host, port });
+  await app.listen({
+    host: config.host,
+    port: config.port,
+  });
 } catch (error) {
   app.log.error(error);
   process.exit(1);

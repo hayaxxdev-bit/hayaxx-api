@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import packageJson from "../package.json" with { type: "json" };
 
 const app = Fastify({ logger: true });
 
@@ -6,10 +7,10 @@ const port = Number(process.env.PORT ?? 3001);
 const host = process.env.HOST ?? "0.0.0.0";
 
 app.get("/health", async () => {
-  return { 
+  return {
     status: "ok",
     service: "hayaxx-api",
-    version: "0.2.0"
+    version: packageJson.version,
   };
 });
 
